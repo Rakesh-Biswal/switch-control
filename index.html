@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Water Pump Controller</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #2a3a7c, #3a4a8c);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: #fff;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 480px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 25px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.8;
+        }
+
+        .status-card {
+            padding: 30px;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.15);
+            margin: 20px;
+            border-radius: 18px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .status-title {
+            font-size: 18px;
+            margin-bottom: 15px;
+            opacity: 0.9;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .status-text {
+            font-size: 22px;
+            font-weight: 600;
+            padding: 8px 20px;
+            border-radius: 50px;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .status-text.off {
+            color: #ff6b6b;
+            box-shadow: 0 0 15px rgba(255, 107, 107, 0.5);
+        }
+
+        .status-text.on {
+            color: #4cd964;
+            box-shadow: 0 0 15px rgba(76, 217, 100, 0.5);
+        }
+
+        .pump-icon {
+            font-size: 40px;
+            color: #4fa8ff;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .switch-container {
+            position: relative;
+            width: 180px;
+            height: 90px;
+            margin: 30px auto;
+            display: block;
+        }
+
+        /* The actual switch - now visible! */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 180px;
+            height: 90px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to right, #ff6b6b, #ff8e6b);
+            transition: .5s;
+            border-radius: 50px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 70px;
+            width: 70px;
+            left: 10px;
+            bottom: 10px;
+            background-color: white;
+            transition: .5s;
+            border-radius: 50%;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        input:checked + .slider {
+            background: linear-gradient(to right, #4cd964, #5de887);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(90px);
+        }
+
+        .switch-label {
+            display: block;
+            text-align: center;
+            margin-top: 10px;
+            font-size: 16px;
+            opacity: 0.8;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.15);
+            margin: 20px;
+            border-radius: 18px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 15px;
+            font-size: 16px;
+            color: #4fa8ff;
+            display: none;
+        }
+
+        .loading i {
+            margin-right: 10px;
+            animation: spin 1.5s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            text-align: center;
+            padding: 15px;
+            margin: 0 20px 20px;
+            background: rgba(255, 107, 107, 0.2);
+            border-radius: 12px;
+            color: #ff6b6b;
+            display: none;
+            border: 1px solid rgba(255, 107, 107, 0.3);
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.15);
+            margin: 0 20px 20px;
+            border-radius: 12px;
+            font-size: 14px;
+        }
+
+        .connection-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #4cd964;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 14px;
+            opacity: 0.7;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .water-animation {
+            position: relative;
+            height: 60px;
+            margin: 20px;
+            border-radius: 12px;
+            overflow: hidden;
+            background: rgba(79, 168, 255, 0.1);
+        }
+
+        .water {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 0%;
+            background: linear-gradient(to top, rgba(79, 168, 255, 0.7), rgba(79, 168, 255, 0.3));
+            transition: height 1.5s ease;
+        }
+
+        .water.on {
+            height: 100%;
+            animation: wave 3s infinite linear;
+        }
+
+        @keyframes wave {
+            0% { background-position: 0 0; }
+            100% { background-position: 40px 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-tint"></i> Smart Water Pump</h1>
+            <p>Control your water pump remotely</p>
+        </div>
+
+        <div class="status-card">
+            <div class="status-title">PUMP STATUS</div>
+            <div class="status-indicator">
+                <i class="fas fa-water pump-icon"></i>
+                <div id="statusText" class="status-text off">OFF</div>
+            </div>
+
+            <div class="water-animation">
+                <div id="waterEffect" class="water"></div>
+            </div>
+
+            <div class="switch-container">
+                <label class="switch">
+                    <input type="checkbox" id="pumpSwitch">
+                    <span class="slider"></span>
+                </label>
+                <span class="switch-label">Click to toggle</span>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-value" id="uptime">0h 0m</div>
+                <div class="stat-label">Uptime Today</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="energy">0.0</div>
+                <div class="stat-label">Energy (kWh)</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="flowRate">0.0</div>
+                <div class="stat-label">Flow Rate (L/min)</div>
+            </div>
+        </div>
+
+        <div class="connection-status">
+            <div class="connection-dot"></div>
+            <span>Connected to Cloud</span>
+        </div>
+
+        <div id="loadingMessage" class="loading">
+            <i class="fas fa-sync-alt"></i> Updating pump status...
+        </div>
+
+        <div id="errorMessage" class="error"></div>
+
+        <div class="footer">
+            Smart Water Pump Controller • IoT System
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            databaseURL: "https://cloud-switch-6fa15-default-rtdb.firebaseio.com/"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // Get DOM elements
+        const pumpSwitch = document.getElementById('pumpSwitch');
+        const statusText = document.getElementById('statusText');
+        const waterEffect = document.getElementById('waterEffect');
+        const loadingMessage = document.getElementById('loadingMessage');
+        const errorMessage = document.getElementById('errorMessage');
+        const uptimeElement = document.getElementById('uptime');
+        const energyElement = document.getElementById('energy');
+        const flowRateElement = document.getElementById('flowRate');
+
+        // Reference to the pump status in Firebase
+        const pumpRef = database.ref('waterPump/status');
+
+        // Variables for stats
+        let pumpStartTime = null;
+        let totalUptimeToday = 0;
+
+        // Listen for changes from Firebase
+        pumpRef.on('value', (snapshot) => {
+            const status = snapshot.val();
+            console.log('Status from Firebase:', status);
+            
+            if (status !== null) {
+                updateUI(status === 1);
+                hideError();
+            }
+        }, (error) => {
+            showError('Error reading from database: ' + error.message);
+        });
+
+        // Handle switch toggle
+        pumpSwitch.addEventListener('change', function() {
+            const newStatus = this.checked ? 1 : 0;
+            showLoading();
+            
+            pumpRef.set(newStatus)
+                .then(() => {
+                    console.log('Status updated to:', newStatus);
+                    hideLoading();
+                    hideError();
+                    
+                    // Update stats
+                    if (newStatus === 1) {
+                        pumpStartTime = new Date();
+                    } else {
+                        if (pumpStartTime) {
+                            const runtime = (new Date() - pumpStartTime) / 1000 / 60; // in minutes
+                            totalUptimeToday += runtime;
+                            updateUptimeDisplay();
+                            pumpStartTime = null;
+                        }
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error updating status:', error);
+                    showError('Error updating pump status: ' + error.message);
+                    hideLoading();
+                    // Revert the switch position
+                    this.checked = !this.checked;
+                    updateUI(!this.checked);
+                });
+        });
+
+        // Update UI based on pump status
+        function updateUI(isOn) {
+            pumpSwitch.checked = isOn;
+            
+            if (isOn) {
+                statusText.textContent = 'ON';
+                statusText.className = 'status-text on';
+                waterEffect.classList.add('on');
+                
+                // Start tracking uptime
+                if (!pumpStartTime) {
+                    pumpStartTime = new Date();
+                }
+            } else {
+                statusText.textContent = 'OFF';
+                statusText.className = 'status-text off';
+                waterEffect.classList.remove('on');
+                
+                // Stop tracking uptime
+                if (pumpStartTime) {
+                    const runtime = (new Date() - pumpStartTime) / 1000 / 60; // in minutes
+                    totalUptimeToday += runtime;
+                    updateUptimeDisplay();
+                    pumpStartTime = null;
+                }
+            }
+            
+            // Update energy and flow rate based on status
+            updateStats(isOn);
+        }
+
+        function updateUptimeDisplay() {
+            const totalMinutes = Math.floor(totalUptimeToday);
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+            uptimeElement.textContent = `${hours}h ${minutes}m`;
+        }
+
+        function updateStats(isOn) {
+            // Simulate energy consumption
+            const energy = (isOn ? 1.2 + Math.random() * 0.3 : 0).toFixed(1);
+            energyElement.textContent = energy;
+            
+            // Simulate flow rate
+            const flowRate = (isOn ? 12.5 + Math.random() * 2.5 : 0).toFixed(1);
+            flowRateElement.textContent = flowRate;
+        }
+
+        function showLoading() {
+            loadingMessage.style.display = 'block';
+        }
+
+        function hideLoading() {
+            loadingMessage.style.display = 'none';
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+        }
+
+        function hideError() {
+            errorMessage.style.display = 'none';
+        }
+
+        // Initial load - get current status
+        showLoading();
+        pumpRef.once('value')
+            .then((snapshot) => {
+                const status = snapshot.val();
+                if (status !== null) {
+                    updateUI(status === 1);
+                } else {
+                    // Initialize with OFF status if no value exists
+                    pumpRef.set(0);
+                    updateUI(false);
+                }
+                hideLoading();
+            })
+            .catch((error) => {
+                console.error('Error reading initial status:', error);
+                showError('Failed to load pump status');
+                hideLoading();
+            });
+
+        // Update stats every 5 seconds when pump is on
+        setInterval(() => {
+            if (pumpSwitch.checked) {
+                updateStats(true);
+                updateUptimeDisplay();
+            }
+        }, 5000);
+    </script>
+</body>
+</html>
